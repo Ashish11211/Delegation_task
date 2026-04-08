@@ -1,0 +1,25 @@
+function doGet(e) {
+  const htmlServ = HtmlService.createTemplateFromFile("main");
+  const html = htmlServ.evaluate();
+  return html
+}
+
+
+function loadInside(){
+  const htmlServ = HtmlService.createTemplateFromFile("main");
+  const html = htmlServ.evaluate();
+  html.setWidth(950).setHeight(700)
+  const ui = SpreadsheetApp.getUi()
+  ui.showModalDialog(html,"SALES Delegation Sheet")
+}
+
+function createMenu_(){
+  const ui = SpreadsheetApp.getUi()
+  const menu = ui.createMenu("SALES Delegation Sheet")
+  menu.addItem("Start Delegation","loadInside")
+  menu.addToUi()
+}
+
+function onOpen(){
+  //createMenu_()
+}
