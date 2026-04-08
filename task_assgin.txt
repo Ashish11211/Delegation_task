@@ -1,0 +1,477 @@
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Assignment</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css"
+        integrity="sha512-mSYUmp1HYZDFaVKK//63EcZq4iFWFjxSL+Z3T/aCt4IO9Cejm03q3NKKYN6pFQzY0SBOr8h+eCIAZHPXcpZaNw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            color: #333333;
+            line-height: 1.5;
+            padding: 20px;
+        }
+        .container {
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+}
+.nav-tabs {
+    border-bottom: 2px solid #cccccc;
+    margin-bottom: 20px;
+    display: inline-flex;
+    justify-content: center;
+    width: 100%;
+}
+.nav-item {
+    margin-right: 10px;
+    flex: 1;
+}
+.nav-link {
+    padding: 10px 15px;
+    border-radius: 5px;
+    color: #000000;
+    background-color: #f5f5f5;
+    cursor: pointer;
+    font-weight: 500;
+    text-align: center;
+}
+.nav-link.active, .nav-link:hover {
+    background-color: #333333;
+    color: #ffffff;
+}
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10000;
+            background-color: rgba(255, 255, 255, 0.92);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            color: #333333;
+        }
+        .invisible {
+            visibility: hidden;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #333333;
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Delegation System</h1>
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <div class="nav-link" id="add-new-task-link">Add New Task</div>
+            </li>
+            <li class="nav-item">
+                <div class="nav-link" id="follow-up-link">Follow Up</div>
+            </li>
+            <li class="nav-item">
+                <div class="nav-link" id="all-pending-tasks">All Pending Tasks</div>
+            </li>
+        </ul>
+        <div id="app"></div>
+
+        <div id="loading" class="invisible">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous">
+    </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"
+        integrity="sha512-T/tUfKSV1bihCnd+MxKD0Hm1uBBroVYBOYSk1knyvQ9VyZJpc/ALb4P0r6ubwVPSGB2GvjeoMAJJImBG12TiaQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</body>
+
+
+
+<script>
+  var data;
+    function onFailure(error) {
+        console.log(error.message)
+      }
+
+    function removeActiveClasses() {
+      document.getElementById("follow-up-link").classList.remove("active");
+      document.getElementById("add-new-task-link").classList.remove("active");
+      document.getElementById("all-pending-tasks").classList.remove("active");
+    }
+
+    function loadFView(){
+      loadingStart();
+      removeActiveClasses();
+      loadView({func : "loadFollowUpView", callback: setDataForSearch});
+      document.getElementById("follow-up-link").classList.add("active");
+      loadingEnd();
+    }
+
+    function loadAddView(){
+      loadingStart();
+      removeActiveClasses();
+      loadView({func : "loadAddNewView", callback:setDoerNames});
+      document.getElementById("add-new-task-link").classList.add("active");
+      loadingEnd();
+    }
+
+    function loadAllPendingView() {
+      loadingStart();
+      removeActiveClasses();
+      loadView({func : "loadPendingTasksView", callback:setSearchDataforAllPending});
+      document.getElementById("all-pending-tasks").classList.add("active");
+      loadingEnd();
+    }
+
+
+    function setDoerNames() {
+        loadingStart();
+        google.script.run.withSuccessHandler(function(names) {
+                var dropdown = document.getElementById("name");
+                
+                // Clear existing options (except the first one)
+                while (dropdown.options.length > 1) {
+                    dropdown.remove(1);
+                }
+
+                // Add new options
+                names.forEach(function(name) {
+                    var option = document.createElement("option");
+                    option.textContent = name;
+                    option.value = name;
+                    dropdown.appendChild(option);
+                });
+                
+                loadingEnd();
+            })
+            .withFailureHandler(onFailure)
+            .getAllDoers();
+    }
+
+
+    function otherFunc(params){
+      document.getElementById("h1").textContent = params.title
+    }
+
+    function loadView(options){
+      var id = typeof options.id === "undefined" ? "app" : options.id
+      var cb = typeof options.callback === "undefined" ? function(){} : options.callback
+
+      google.script.run.withSuccessHandler(function(html){
+        document.getElementById(id).innerHTML = html
+        typeof options.params === "undefined" ? cb() : cb(options.params)
+      }).withFailureHandler(onFailure)[options.func]();
+
+    }
+
+    function setSearchDataforAllPending(){
+      loadingStart()
+      google.script.run.withSuccessHandler(function(dataReturned){
+        var searchInput = document.getElementById("searchName").value.toString().toLowerCase() 
+        var taskInput = document.getElementById("searchTask").value.toString().toLowerCase()
+
+        data = dataReturned.slice()
+
+        if (!searchInput && !taskInput) {
+          var searchResultsBox = document.getElementById("searchResults")
+          var templateBox = document.getElementById("rowTemplate")
+          var template = templateBox.content
+
+
+       searchResultsBox.innerHTML = ""
+
+      if (data.length < 1) {
+        document.querySelector('.no-results').classList.remove("invisible")
+      } else {
+        document.querySelector('.no-results').classList.add("invisible")
+      }
+
+      data.forEach(function(r){
+        var tr = template.cloneNode(true)
+        var taskIdCol = tr.querySelector(".taskID")
+        var nameCol = tr.querySelector(".doerName")
+        var taskCol = tr.querySelector(".task")
+        var plDate = tr.querySelector(".planned_date")
+        var revise = tr.querySelector(".revise-button")
+        var done = tr.querySelector(".confirm-button2")
+        done.dataset.taskid = r[0]
+        revise.dataset.taskid = r[0]
+        taskIdCol.textContent = r[0]
+        nameCol.textContent = r[1]
+        taskCol.textContent = r[2]
+        plDate.textContent = r[3]
+        searchResultsBox.appendChild(tr)
+      })
+        }
+      loadingEnd()
+      }).withFailureHandler(onFailure).fetchAllPendingData()
+      
+    }
+
+    function setDataForSearch(){
+      loadingStart()
+      google.script.run.withSuccessHandler(function(dataReturned){
+        var searchInput = document.getElementById("searchName").value.toString().toLowerCase() 
+        var taskInput = document.getElementById("searchTask").value.toString().toLowerCase()
+
+        data = dataReturned.slice()
+
+        if (!searchInput && !taskInput) {
+          var searchResultsBox = document.getElementById("searchResults")
+          var templateBox = document.getElementById("rowTemplate")
+          var template = templateBox.content
+
+
+       searchResultsBox.innerHTML = ""
+
+      if (data.length < 1) {
+        document.querySelector('.no-results').classList.remove("invisible")
+      } else {
+        document.querySelector('.no-results').classList.add("invisible")
+      }
+
+      data.forEach(function(r){
+        var tr = template.cloneNode(true)
+        var taskIdCol = tr.querySelector(".taskID")
+        var nameCol = tr.querySelector(".doerName")
+        var taskCol = tr.querySelector(".task")
+        var plDate = tr.querySelector(".planned_date")
+        var revise = tr.querySelector(".revise-button")
+        var done = tr.querySelector(".confirm-button")
+        done.dataset.taskid = r[0]
+        revise.dataset.taskid = r[0]
+        taskIdCol.textContent = r[0]
+        nameCol.textContent = r[1]
+        taskCol.textContent = r[2]
+        plDate.textContent = r[3]
+        searchResultsBox.appendChild(tr)
+      })
+        }
+      loadingEnd()
+      }).withFailureHandler(onFailure).fetchRelevantData()
+      
+    }
+
+    function search(){
+      var searchInput = document.getElementById("searchName").value.toString().toLowerCase() 
+      var taskInput = document.getElementById("searchTask").value.toString().toLowerCase()
+      searchInput = searchInput === "" ? "undefined" : searchInput
+      taskInput = taskInput === "" ? "undefined" : taskInput
+
+
+      var resultsArray = data.filter(function(r){
+        var dataName = r[1].toString().toLowerCase()
+        var dataTask = r[2].toString().toLowerCase()
+
+        return dataName.indexOf(searchInput) !== -1 ||dataTask.indexOf(taskInput) !== -1
+      })
+
+      var searchResultsBox = document.getElementById("searchResults")
+      var templateBox = document.getElementById("rowTemplate")
+      var template = templateBox.content
+
+
+      searchResultsBox.innerHTML = ""
+
+      resultsArray.forEach(function(r){
+        var tr = template.cloneNode(true)
+        var taskIdCol = tr.querySelector(".taskID")
+        var nameCol = tr.querySelector(".doerName")
+        var taskCol = tr.querySelector(".task")
+        var plDate = tr.querySelector(".planned_date")
+        var revise = tr.querySelector(".revise-button")
+        var done = tr.querySelector(".confirm-button")
+        if (!done) {
+          done = tr.querySelector(".confirm-button2");
+        }
+        done.dataset.taskid = r[0]
+        revise.dataset.taskid = r[0]
+        taskIdCol.textContent = r[0]
+        nameCol.textContent = r[1]
+        taskCol.textContent = r[2]
+        plDate.textContent = r[3]
+        searchResultsBox.appendChild(tr)
+      })
+
+      if (searchInput === "undefined" && taskInput === "undefined") {
+        data.forEach(function(r){
+        var tr = template.cloneNode(true)
+        var taskIdCol = tr.querySelector(".taskID")
+        var nameCol = tr.querySelector(".doerName")
+        var taskCol = tr.querySelector(".task")
+        var plDate = tr.querySelector(".planned_date")
+        var revise = tr.querySelector(".revise-button")
+        var done = tr.querySelector(".confirm-button")
+        done.dataset.taskid = r[0]
+        revise.dataset.taskid = r[0]
+        taskIdCol.textContent = r[0]
+        nameCol.textContent = r[1]
+        taskCol.textContent = r[2]
+        plDate.textContent = r[3]
+        searchResultsBox.appendChild(tr)
+      })
+      }
+
+
+    }
+
+    function reviseTheTask(returnTo) {
+      loadingStart("1");
+      var taskDetails = {};
+      taskDetails.id = document.getElementById("id").value;
+      taskDetails.pl = document.getElementById("planned_date").value;
+
+      if (!taskDetails.pl || !taskDetails.id) {
+        loadingEnd();
+        alert("Please enter all the details");
+      } else {
+      google.script.run.withSuccessHandler(function(){
+        if (returnTo === "loadAllPendingView") {
+        loadAllPendingView();
+        } else {
+          loadFView();
+        }
+      }).withFailureHandler(onFailure).addNext(taskDetails);
+      }
+    }
+
+    function addTask(){
+      var taskInfo = {}
+      taskInfo.name = document.getElementById("name").value
+      taskInfo.task = document.getElementById("task").value
+      taskInfo.fdate = document.getElementById("planned_date").value
+
+      if (!taskInfo.name || !taskInfo.task || !taskInfo.fdate){
+        alert("Please fill all the details.")
+      } else {
+        loadingStart()
+        google.script.run.withSuccessHandler(function(){
+          document.getElementById("name").value = ""
+          document.getElementById("task").value = ""
+          document.getElementById("planned_date").value = ""
+          document.getElementById("success-message").classList.remove("invisible")
+          loadingEnd()
+          setTimeout(function(){
+            document.getElementById("success-message").classList.add("invisible")
+          },3000)
+
+        }).withFailureHandler(onFailure).addNew(taskInfo)
+
+      }
+    }
+
+    function completeTask(id, returnTo) {
+      loadingStart();
+      google.script.run.withSuccessHandler(function(r){
+      if (returnTo === "loadAllPendingView") {
+        loadAllPendingView();
+      } else {
+        loadFView();
+      }
+      loadingEnd();
+      }).withFailureHandler(onFailure).taskComplete(id);
+    }
+
+    function displayConfirmation(e){
+      if(e.target.dataset.buttonState === "done"){
+      e.target.nextElementSibling.classList.remove("d-none")
+      e.target.dataset.buttonState = "cancel"
+      e.target.textContent = "Cancel"
+      } else {
+      e.target.nextElementSibling.classList.add("d-none")
+      e.target.dataset.buttonState = "done"
+      e.target.textContent = "Done"
+      }
+    }
+
+    function loadingStart(t){
+      t ? console.log(t) : t
+      document.getElementById("loading").classList.remove("invisible")
+    }
+
+    function loadingEnd(){
+      document.getElementById("loading").classList.add("invisible")
+    }
+
+    function afterReviseLoads(params){
+      loadingStart()
+      google.script.run.withSuccessHandler(function(r){
+        document.getElementById("name").value = r.name
+        document.getElementById("task").value = r.task
+        document.getElementById("id").value = r.taskid
+        loadingEnd()
+      }).withFailureHandler(onFailure).getInfoByTaskID(params.taskID)
+    }
+
+    document.getElementById("follow-up-link").addEventListener("click",loadFView)
+    document.getElementById("add-new-task-link").addEventListener("click",loadAddView)
+    document.getElementById("all-pending-tasks").addEventListener("click",loadAllPendingView)
+
+    
+  function clickEventHandler(e){
+    if (e.target.matches("#add-task-button")){
+     document.getElementById("add-task-button").disabled = "true";
+      addTask();
+      document.getElementById("add-task-button").disabled = "false";
+    }
+    if (e.target.matches(".revise-button")){
+      loadView({func : "loadReviseView", callback:afterReviseLoads, params : {taskID:e.target.dataset.taskid}});
+   }
+    if (e.target.matches("#revise-task-button")){
+      document.getElementById("revise-task-button").disabled = "true";
+      reviseTheTask("loadAllPendingView"); // Pass the correct return view
+    }
+    if (e.target.matches(".done-button")){
+     displayConfirmation(e);
+    }
+    if (e.target.matches(".confirm-button")){
+      completeTask(e.target.dataset.taskid, "loadFView"); // Pass the correct return view
+    }
+
+    if (e.target.matches(".confirm-button2")){
+      completeTask(e.target.dataset.taskid, "loadAllPendingView"); // Pass the correct return view
+    }
+  }
+
+
+    function inputEventHandler(e){
+      if (e.target.matches("#searchName") || e.target.matches("#searchTask")){
+        search()
+      }
+    }
+    document.getElementById("app").addEventListener("input",inputEventHandler)
+
+    document.getElementById("app").addEventListener("click",clickEventHandler)
+
+    document.addEventListener("DOMContentLoaded",loadFView)
+    
+
+</script>
+</body>
+
+</html>

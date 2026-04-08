@@ -1,0 +1,41 @@
+<div class="mb-3 pt-2">
+  <input type="text" class="form-control input-sm" id="searchName" placeholder="Search Name...">
+</div>
+<div class="mb-3">
+  <input type="text" class="form-control input-sm" id="searchTask" placeholder="Search Task...">
+</div>
+
+<table class="table table-hover table-bordered table-sm">
+  <thead>
+    <tr>
+      <th scope="col">id</th>
+      <th scope="col">Name</th>
+      <th scope="col">Task</th>
+      <th scope="col">Planned Date</th>
+      <th scope="col"></th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+  <tbody id="searchResults">
+  </tbody>
+</table>
+  <div class="alert alert-primary invisible no-results" role="alert">
+  No Tasks Pending
+</div>
+
+
+<template id="rowTemplate">
+  <tr>
+      <th scope="row" class="taskID"></th>
+      <td class="doerName"></td>
+      <td class="task"></td>
+      <td class="planned_date"></td>
+      <td class="text-center">
+        <div class="btn-group" role="group">
+        <button type="button" class="btn btn-outline-success btn-sm done-button" data-button-state="done">Done</button>
+        <button type="button" class="btn btn-outline-danger btn-sm confirm-button2 d-none">Confirm</button>
+        </div>
+        </td>
+      <td class="text-center"><button type="button" class="btn btn-outline-warning btn-sm revise-button">Revise</button></td>
+    </tr>
+</template>
